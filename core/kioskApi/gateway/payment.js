@@ -3,17 +3,17 @@ import axios from "axios";
 import * as masterMdl from '../models/kioskModel.js';
 
 
-const OAUTH_URL = "https://pluraluat.v2.pinepg.in/api/auth/v1/token";
+// const OAUTH_URL = "https://pluraluat.v2.pinepg.in/api/auth/v1/token";
 
-const BASE_URL = "https://pluraluat.v2.pinepg.in/api/checkout/v1";
+// const BASE_URL = "https://pluraluat.v2.pinepg.in/api/checkout/v1";
 
-const BASE_URL2 = "https://pluraluat.v2.pinepg.in/api/pay/v1";
+// const BASE_URL2 = "https://pluraluat.v2.pinepg.in/api/pay/v1";
 
-// const OAUTH_URL = "https://api.pluralpay.in/api/auth/v1/token";
+const OAUTH_URL = "https://api.pluralpay.in/api/auth/v1/token";
 
-// const BASE_URL = "https://api.pluralpay.in/api/checkout/v1";
+const BASE_URL = "https://api.pluralpay.in/api/checkout/v1";
 
-// const BASE_URL2 = "https://api.pluralpay.in/api/pay/v1";
+const BASE_URL2 = "https://api.pluralpay.in/api/pay/v1";
 
 //------------------------PAst Keys -------------------------------------------
 // {
@@ -44,12 +44,12 @@ async function getAccessToken(kit) {
     const res = await axios.post(
         OAUTH_URL,
         {
-            // client_id: kit.client_id,
-            // client_secret: kit.secret_client_id,
-            // grant_type: "client_credentials"
-            client_id: 'f1b62319-69af-493a-a2a9-6e1e1a088645',
-            client_secret: '52f68ec30d474ba8854f07b128c2bcf1',
+            client_id: kit.client_id,
+            client_secret: kit.secret_client_id,
             grant_type: "client_credentials"
+        //     client_id: 'f1b62319-69af-493a-a2a9-6e1e1a088645',
+        //     client_secret: '52f68ec30d474ba8854f07b128c2bcf1',
+        //     grant_type: "client_credentials"
         },
 
         {
