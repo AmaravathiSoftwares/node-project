@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A.P Endowment Department Meeting Tasks</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    @media print {
+      #printButton {
+        display: none;
+      }
+    }
+
+    .table td, .table th {
+      vertical-align: middle;
+      word-break: break-word;
+    }
+
+    .header-logo {
+      width: 80px;
+      height: 80px;
+    }
+
+    .meeting-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .meeting-date {
+      font-weight: bold;
+    }
+
+    .width-textArea {
+      max-width: 250px;
+      word-wrap: break-word;
+    }
+
+    .custom-table th {
+      background-color: #f1f1f1;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="meeting-header">
+    <img src="https://mepmaap.com/images/govt.png" class="header-logo" alt="Govt Logo" />
+    <h5 class="mt-2">A.P Endowment Department</h5>
+    <div class="row">
+      <div class="col-6">
+        <p style="float: left;"><span class="meeting-date">Meeting Date :</span> <%= formatted %></p>
+      </div>
+       <div class="col-6">
+        <p style="float: right;"><span class="meeting-date">Meeting Time :</span> <%= meetingArray[0].meeting_start_tm %> - <%= meetingArray[0].meeting_end_tm %></p>
+      </div>
+    </div>  
+    <div class="row">
+      <div class="col-6">
+        <p  style="float: left;"><span class="meeting-date">Meeting Title :</span> <%= meetingArray[0].meeting_title %></p>
+      </div>
+      <div class="col-6">
+        <p  style="float: right;"><span class="meeting-date">Description :</span> <%= meetingArray[0].meeting_description %></p>
+      </div>        
+    </div>
+     <div class="row">
+         <% if(meetingArray[0].type == "offline") { %>
+          <div class="col-6">
+            <p  style="float: left;"><span class="meeting-date">Venue :</span> <%= meetingArray[0].meeting_venue %></p>
+          </div>
+          <% } else { %>
+          <div class="col-6">
+            <p  style="float: left;"><span class="meeting-date">Link :</span> <%= meetingArray[0].link %></p>
+          </div>
+          <% } %> 
+          <div class="col-6">
+            <p  style="float: right;"><span class="meeting-date">Employees Attended :</span> <%= meetingArray[0].attended_officer_nm %></p>
+          </div>
+    </div>
+  </div>
+
+  <table class="table table-bordered table-hover custom-table">
+    <thead class="text-center">
+      <tr>
+        <th>S.No</th>
+        <th>Task ID</th>
+        <th>Task Description</th>
+        <th>Priority</th>
+        <th>Responsible Person</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% for (let i = 0; i < meetingArray.length; i++) { %>
+      <tr>
+        <td class="text-center"><%= i + 1 %></td>
+        <td><%= meetingArray[i].task_ref_num %></td>
+        <td class="width-textArea"><%= meetingArray[i].description %></td>
+        <td class="width-textArea"><%= meetingArray[i].priority %></td>
+        <td class="width-textArea"><%= meetingArray[i].officer_nm %></td>
+      </tr>
+      <% } %>
+    </tbody>
+  </table>
+
+  <div class="text-end">
+    <button class="btn btn-primary" id="printButton" onclick="window.print()">Print Report</button>
+    <button class="btn btn-danger" id="printButton" onclick="window.close()">Back</button>
+  </div>
+</div>
+
+</body>
+</html>
