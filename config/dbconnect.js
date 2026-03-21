@@ -7,8 +7,12 @@ var MySQLConPool = {};
 // var DB_HOST_NAME = 'localhost';
 
 
-var USER = 'root';  
-var PWD = '';
+// var USER = 'root';  
+// var PWD = '';
+// var DATABASE = 'tms_db2';
+// var DB_HOST_NAME = 'localhost';
+var USER = 'aneel';
+var PWD = 'Aneel@3699';
 var DATABASE = 'tms_db2';
 var DB_HOST_NAME = 'localhost';
 
