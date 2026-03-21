@@ -10,7 +10,7 @@ import * as httpContext from 'express-http-context';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import envs from "./config.js";
-const { PORT } = envs;
+const PORT = envs.PORT || process.env.PORT || 3000;
 // create clusters 
 import os from 'os';
 import { validateJWT } from "./utils/jwtUtils.js"

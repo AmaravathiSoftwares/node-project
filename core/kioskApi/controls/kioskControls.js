@@ -1286,6 +1286,7 @@ export async function createPrasadamOrderCtrlOrg(req, res) {
             const dateStr = `${yyyy}${mm}${dd}103`;
             const recid = `${dateStr}${recidi}`;
             data.ticket_id = recid;
+            
             const hash = crypto.createHash('sha256').update(data.reqId).digest('hex');
             const shortKey = hash.slice(0, 12);
 
