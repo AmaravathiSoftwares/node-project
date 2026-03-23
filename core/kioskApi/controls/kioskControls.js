@@ -396,34 +396,41 @@ export async function updateDarshnamOrderStatusCtrl(req, res) {
     try {
         const data = req.body;
         masterMdl.getDarshanDetailswithTicketid(data, async function (err, result) {
-            if (result) {
-
-                let order_id, temple_id;
-
-                if (data.category_type == 6) {
-                    order_id = result[0][0].order_id;
-                    temple_id = result[0][0].temple_id;
-                } else {
-                    order_id = result[0].order_id;
-                    temple_id = result[0].temple_id;
-                }
-
-                const paymentstatus = await getPaymentStatus(order_id, temple_id);
-
-                masterMdl.updateDarshnamOrderStatusMdl(data, paymentstatus, function (err, resulta) {
-                    if (err) {
-                        return res.status(500).json({ status: false, code: 'SERVER_ERROR', message: 'Internal server error' });
-                    }
-
-                    return res.status(200).json({ status: true, code: paymentstatus.status, message: paymentstatus.message, data: result });
-                });
-
-
-            } else {
-                return res.status(500).json({ status: false, code: 'UNEXPECTED_ERROR', message: 'NO RECORD FOUND' });
+            if (err) {
+                return res.status(500).json({ status: false, code: 'SERVER_ERROR', message: 'Internal server error' });
             }
 
-        })
+            if (!result || !result.length) {
+                return res.status(404).json({ status: false, code: 'NOT_FOUND', message: 'NO RECORD FOUND' });
+            }
+
+            let order_id, temple_id;
+
+            if (Number(data.category_type) === 6) {
+                if (!result[0] || !result[0].length) {
+                    return res.status(404).json({ status: false, code: 'NOT_FOUND', message: 'NO RECORD FOUND' });
+                }
+                order_id = result[0][0].order_id;
+                temple_id = result[0][0].temple_id;
+            } else {
+                if (!result[0]) {
+                    return res.status(404).json({ status: false, code: 'NOT_FOUND', message: 'NO RECORD FOUND' });
+                }
+                order_id = result[0].order_id;
+                temple_id = result[0].temple_id;
+            }
+
+            const paymentstatus = await getPaymentStatus(order_id, temple_id);
+
+            masterMdl.updateDarshnamOrderStatusMdl(data, paymentstatus, function (err, resulta) {
+                if (err) {
+                    return res.status(500).json({ status: false, code: 'SERVER_ERROR', message: 'Internal server error' });
+                }
+
+                return res.status(200).json({ status: true, code: paymentstatus.status, message: paymentstatus.message, data: result });
+            });
+
+        });
 
     } catch (error) {
         return res.status(500).json({ status: false, code: 'UNEXPECTED_ERROR', message: 'Something went wrong' });
@@ -769,96 +776,185 @@ export async function createeDarshnamOrdersCtrlOrg(req, res) {
         let total_amount = (data.amount * 1 + data.handling_charge * 1);
         data.total_amount = total_amount * 1;
 
-        masterMdl.createeDarshnamOrdersMdl(data, async function (err, tckitresults) {
-            if (err) {
+        const sendIdempotentResponse = (existingOrder) => {
+            return res.status(200).json({
+                status: true,
+                code: 'SUCCESS',
+                message: 'Order already exists (idempotent response)',
+                ticket_id: existingOrder.ticket_id,
+                total_amount: existingOrder.total_amount,
+                payment: {
+                    order_id: existingOrder.order_id || null
+                },
+                data: existingOrder
+            });
+        };
+
+        masterMdl.getDarshanOrderByRefNoMdl(data, function (precheckErr, existingRows) {
+            if (precheckErr) {
+                console.error("[createDarshan][precheck] DB error", {
+                    message: precheckErr.message,
+                    code: precheckErr.code,
+                    sqlMessage: precheckErr.sqlMessage,
+                    temple_id: data.temple_id,
+                    ref_no: data.ref_no
+                });
                 return res.status(500).send({ status: 500, msg: "Server Error" });
             }
-            console.log(tckitresults)
-            let recidi = 0;
-            if (tckitresults) {
-                recidi = tckitresults.insertId;
+
+            const existingOrder = existingRows?.[0];
+            if (existingOrder) {
+                return sendIdempotentResponse(existingOrder);
             }
-            // const recidi = ((ticket_id * 1) + 1);
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            const dateStr = `${yyyy}${mm}${dd}`;
-            const recid = `${dateStr}101${recidi}`;
-            data.ticket_id = recid;
-            const hash = crypto.createHash('sha256').update(data.reqId).digest('hex');
-            const shortKey = hash.slice(0, 12);
-            console.log(shortKey, 'shortKey');
 
-            const paymentPayload = {
-                "merchant_order_reference": shortKey,
-                "order_amount": {
-                    "value": (total_amount * 1) * (100 * 1),
-                    // "value": 100,
-                    "currency": "INR"
-                },
-                "integration_mode": "SDK",
-                "pre_auth": false,
-                "notes": "Darshan booking",
-                "allowed_payment_methods": [
-                    "UPI"
-                ],
-                callback_url: `ai-tms://payment/success?ticket_id=${recid}&category_type=1`,
-                failure_callback_url: `ai-tms://payment/failed?ticket_id=${recid}&category_type=1`,
-                "purchase_details": {
-                    "customer": {
-                        "first_name": data.devotee_name || "Devotee",
-                        "customer_id": shortKey,
-                        "mobile_number": data.contact_number,
-                        "country_code": "91",
-                        "billing_address": {
-                            "address1": "AP Endowments Department",
-                            "address2": "",
-                            "address3": "Gollapudi",
-                            "pincode": "521225",
-                            "city": "Vijayawada",
-                            "state": "Andhra Pradesh",
-                            "country": "INDIA"
-                        },
-                        "shipping_address": {
-                            "address1": "AP Endowments Department",
-                            "address2": "",
-                            "address3": "Gollapudi",
-                            "pincode": "521225",
-                            "city": "Vijayawada",
-                            "state": "Andhra Pradesh",
-                            "country": "INDIA"
-                        }
-                    },
-                    "merchant_metadata": {
-                        "key1": "DD",
-                        "key2": "XOF"
-                    }
-                }
-            };
-
-            console.log(paymentPayload, 'paymentPayload')
-
-            const paymentResult = await createPaymentOrder(paymentPayload, data.temple_id);
-
-            data.order_id = paymentResult.order_id
-            data.ticket_id = recid
-            data.id = tckitresults.insertId
-            data.shortKey = shortKey;
-            masterMdl.updatedarshanamorder_idMdl(data, function (err, result) {
+            masterMdl.createeDarshnamOrdersMdl(data, async function (err, tckitresults) {
                 if (err) {
-                    return res.status(500).json({ status: false, code: 'SERVER_ERROR', message: 'Internal server error' });
-                }
-                return res.status(200).json({
-                    status: true, code: 'SUCCESS', message: "Darshan order created successfully", ticket_id: recid, total_amount: total_amount,
-                    payment: {
-                        order_id: paymentResult.order_id,
-                        redirect_url: paymentResult.redirect_url
+                    if (err.code === 'ER_DUP_ENTRY') {
+                        return masterMdl.getDarshanOrderByRefNoMdl(data, function (fetchErr, rowsOnDup) {
+                            if (fetchErr) {
+                                console.error("[createDarshan][duplicate-fetch] DB error", {
+                                    message: fetchErr.message,
+                                    code: fetchErr.code,
+                                    sqlMessage: fetchErr.sqlMessage,
+                                    temple_id: data.temple_id,
+                                    ref_no: data.ref_no
+                                });
+                                return res.status(500).send({ status: 500, msg: "Server Error" });
+                            }
+                            const orderOnDup = rowsOnDup?.[0];
+                            if (!orderOnDup) {
+                                return res.status(409).json({
+                                    status: false,
+                                    code: 'DUPLICATE_REF_NO',
+                                    message: 'Duplicate ref_no. Order already exists.'
+                                });
+                            }
+                            return sendIdempotentResponse(orderOnDup);
+                        });
                     }
-                });
+                    console.error("[createDarshan][insert] DB error", {
+                        message: err.message,
+                        code: err.code,
+                        sqlMessage: err.sqlMessage,
+                        temple_id: data.temple_id,
+                        ref_no: data.ref_no,
+                        has_ref_no_column_hint: "Check e_darshnam_orders.ref_no and unique key setup on server DB"
+                    });
+                    return res.status(500).send({ status: 500, msg: "Server Error" });
+                }
+
+                try {
+                    console.log(tckitresults)
+                    let recidi = 0;
+                    if (tckitresults) {
+                        recidi = tckitresults.insertId;
+                    }
+                    // const recidi = ((ticket_id * 1) + 1);
+                    const today = new Date();
+                    const yyyy = today.getFullYear();
+                    const mm = String(today.getMonth() + 1).padStart(2, '0');
+                    const dd = String(today.getDate()).padStart(2, '0');
+                    const dateStr = `${yyyy}${mm}${dd}`;
+                    const recid = `${dateStr}101${recidi}`;
+                    data.ticket_id = recid;
+
+                    const paymentPayload = {
+                        "merchant_order_reference": data.ref_no,
+                        "order_amount": {
+                            "value": (total_amount * 1) * (100 * 1),
+                            // "value": 100,
+                            "currency": "INR"
+                        },
+                        "integration_mode": "SDK",
+                        "pre_auth": false,
+                        "notes": "Darshan booking",
+                        "allowed_payment_methods": [
+                            "UPI"
+                        ],
+                        callback_url: `ai-tms://payment/success?ticket_id=${recid}&category_type=1`,
+                        failure_callback_url: `ai-tms://payment/failed?ticket_id=${recid}&category_type=1`,
+                        "purchase_details": {
+                            "customer": {
+                                "first_name": data.devotee_name || "Devotee",
+                                "customer_id": data.ref_no,
+                                "mobile_number": data.contact_number,
+                                "country_code": "91",
+                                "billing_address": {
+                                    "address1": "AP Endowments Department",
+                                    "address2": "",
+                                    "address3": "Gollapudi",
+                                    "pincode": "521225",
+                                    "city": "Vijayawada",
+                                    "state": "Andhra Pradesh",
+                                    "country": "INDIA"
+                                },
+                                "shipping_address": {
+                                    "address1": "AP Endowments Department",
+                                    "address2": "",
+                                    "address3": "Gollapudi",
+                                    "pincode": "521225",
+                                    "city": "Vijayawada",
+                                    "state": "Andhra Pradesh",
+                                    "country": "INDIA"
+                                }
+                            },
+                            "merchant_metadata": {
+                                "key1": "DD",
+                                "key2": "XOF"
+                            }
+                        }
+                    };
+
+                    console.log(paymentPayload, 'paymentPayload')
+
+                    const paymentResult = await createPaymentOrder(paymentPayload, data.temple_id);
+
+                    data.order_id = paymentResult.order_id
+                    data.ticket_id = recid
+                    data.id = tckitresults.insertId
+                    masterMdl.updatedarshanamorder_idMdl(data, function (err, result) {
+                        if (err) {
+                            console.error("[createDarshan][update-order-id] DB error", {
+                                message: err.message,
+                                code: err.code,
+                                sqlMessage: err.sqlMessage,
+                                order_id: data.order_id,
+                                ticket_id: data.ticket_id,
+                                row_id: data.id,
+                                temple_id: data.temple_id,
+                                ref_no: data.ref_no
+                            });
+                            return res.status(500).json({ status: false, code: 'SERVER_ERROR', message: 'Internal server error' });
+                        }
+                        return res.status(200).json({
+                            status: true, code: 'SUCCESS', message: "Darshan order created successfully", ticket_id: recid, total_amount: total_amount,
+                            payment: {
+                                order_id: paymentResult.order_id,
+                                redirect_url: paymentResult.redirect_url
+                            }
+                        });
+                    });
+                } catch (error) {
+                    console.error("[createDarshan][payment-or-processing] error", {
+                        message: error.message,
+                        stack: error.stack,
+                        temple_id: data.temple_id,
+                        ref_no: data.ref_no
+                    });
+                    return res.status(500).json({
+                        status: false,
+                        code: 'UNEXPECTED_ERROR',
+                        message: 'Something went wrong'
+                    });
+                }
             });
         });
-    } catch (error) {
+    }
+    catch (error) {
+        console.error("[createDarshan][outer] error", {
+            message: error.message,
+            stack: error.stack
+        });
         return res.status(500).json({
             status: false,
             code: 'UNEXPECTED_ERROR',

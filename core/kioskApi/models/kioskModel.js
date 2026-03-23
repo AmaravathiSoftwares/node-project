@@ -271,9 +271,29 @@ export function createeDarshnamOrdersMdl(data, callback) {
     let created_at = moment().tz(IST).format("YYYY-MM-DD");
     let i_ts = moment().tz(IST).format("YYYY-MM-DD HH:mm:ss");
     let seva_date = moment(data.darshanam_date).tz(IST).format("YYYY-MM-DD");
-    const { temple_id, ticket_id, order_id, ticket_type, devotee_name, no_persons, slot_time, amount, handling_charge, total_amount, contact_number, partner_code, payment_status, payment_id, reqId, darshanam_id, slot_id } = data;
-    const QRY_TO_EXEC = `INSERT INTO e_darshnam_orders (temple_id, ticket_id, order_id, ticket_type, devotee_name, no_persons, slot_time, seva_date, amount, handling_charge, total_amount, contact_number, partner_code, printed_on, payment_status, payment_id, created_at, reqId,darshanam_id,slot_id,i_ts,kiosk_entry_by,order_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?)`;
-    let paramsData = [temple_id, ticket_id, order_id, ticket_type, devotee_name, no_persons, slot_time, seva_date, amount, handling_charge, total_amount, contact_number, partner_code, i_ts, payment_status, payment_id, created_at, reqId, darshanam_id, slot_id, i_ts, data.entry_by, 1];
+    const { temple_id, ticket_id, order_id, ticket_type, devotee_name, no_persons, slot_time, amount, handling_charge, total_amount, contact_number, partner_code, payment_status, payment_id, ref_no, darshanam_id, slot_id } = data;
+    const QRY_TO_EXEC = `INSERT INTO e_darshnam_orders (temple_id, ticket_id, order_id, ticket_type, devotee_name, no_persons, slot_time, seva_date, amount, handling_charge, total_amount, contact_number, partner_code, printed_on, payment_status, payment_id, created_at, ref_no,darshanam_id,slot_id,i_ts,kiosk_entry_by,order_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?)`;
+    let paramsData = [temple_id, ticket_id, order_id, ticket_type, devotee_name, no_persons, slot_time, seva_date, amount, handling_charge, total_amount, contact_number, partner_code, i_ts, payment_status, payment_id, created_at, ref_no, darshanam_id, slot_id, i_ts, data.entry_by, 1];
+
+    if (callback && typeof callback == "function") {
+        sqlinjection(MySQLConPool, QRY_TO_EXEC, paramsData, cntxtDtls, function (err, results) {
+            callback(err, results);
+            return;
+        });
+    } else {
+        return sqlinjection(MySQLConPool, QRY_TO_EXEC, paramsData, cntxtDtls);
+    }
+}
+
+export function getDarshanOrderByRefNoMdl(data, callback) {
+    const cntxtDtls = "in getDarshanOrderByRefNoMdl";
+    const QRY_TO_EXEC = `
+        SELECT id, temple_id, ref_no, ticket_id, order_id, payment_status, contact_number, total_amount, created_at
+        FROM e_darshnam_orders
+        WHERE temple_id = ? AND ref_no = ?
+        LIMIT 1
+    `;
+    const paramsData = [data.temple_id, data.ref_no];
 
     if (callback && typeof callback == "function") {
         sqlinjection(MySQLConPool, QRY_TO_EXEC, paramsData, cntxtDtls, function (err, results) {

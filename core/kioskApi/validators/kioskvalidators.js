@@ -283,6 +283,15 @@ export const esevaValidator = {
             .matches(/^[0-9]+$/)
             .withMessage('Temple_id must be numeric')
             .customSanitizer(preventFormulaInjection),
+        body('ref_no')
+            .trim()
+            .notEmpty()
+            .withMessage('ref_no is required')
+            .isLength({ min: 8, max: 64 })
+            .withMessage('ref_no length invalid')
+            .matches(/^[A-Za-z0-9_-]+$/)
+            .withMessage('ref_no format invalid')
+            .customSanitizer(preventFormulaInjection),
         // body('devotee_name')
         //     .trim()
         //     .notEmpty()
