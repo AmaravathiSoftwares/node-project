@@ -24,6 +24,9 @@ export async function apprefreshTokenController(req, res) {
     let newAccessToken;
     try {
         newAccessToken = await validaterefreshToken(refreshToken);
+        if (!newAccessToken || typeof newAccessToken !== 'string') {
+            return res.status(403).json({ success: false, message: 'Invalid or expired refresh token' });
+        }
         return res.json({ success: true, accessToken: newAccessToken });
     } catch (err) {
         return res.status(403).json({ success: false, message: 'Invalid or expired refresh token' });
@@ -1286,7 +1289,6 @@ export async function createPrasadamOrderCtrlOrg(req, res) {
             const dateStr = `${yyyy}${mm}${dd}103`;
             const recid = `${dateStr}${recidi}`;
             data.ticket_id = recid;
-            
             const hash = crypto.createHash('sha256').update(data.reqId).digest('hex');
             const shortKey = hash.slice(0, 12);
 
